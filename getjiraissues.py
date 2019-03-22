@@ -9,7 +9,6 @@ import json
 
 def help():
     print ("")
-    print ("")
     print ("  you should run with 3 arguments")
     print ("  1. url with '-d' option")
     print ("  2. userID with '-i' option")
@@ -25,7 +24,13 @@ def get_issues(url, auth, projectname):
         res = requests.get(url + "/rest/api/2/search?jql=project=" + projectname + "&fields=id,key,summary", auth=auth)
     except requests.exceptions.ConnectionError:
         res.status_code = "Connection refused"
-        return
+        print("connection refused")
+        help()
+        return False
+    except requests.URLRequired:
+        print("invalid url...")
+        help()
+        return False
 
     jsondict = json.loads(res.text)
 
@@ -36,7 +41,17 @@ def get_issues(url, auth, projectname):
 
 def get_projects(url, auth):
     prjlst = []
-    res = requests.get(url + "/rest/api/2/project", auth=auth)
+    try:
+        res = requests.get(url + "/rest/api/2/project", auth=auth)
+    except requests.exceptions.ConnectionError:
+        print("connection refused")
+        help()
+        return None
+    except requests.URLRequired:
+        print("invalid url...")
+        help()
+        return None
+
     jsondict = json.loads(res.text)
 
     for project in jsondict:
@@ -44,7 +59,7 @@ def get_projects(url, auth):
     return prjlst
 
 def main():
-    g_url = ""
+    url = "http://"
 
     parser = optparse.OptionParser()
     parser.add_option('-i', '--id', action='store', dest='id', help="enter user id")
@@ -52,21 +67,26 @@ def main():
     parser.add_option('-d', '--dest', action='store', dest='dest', help="enter url")
     (options, args) = parser.parse_args(sys.argv)
 
-    if options.dest != None:
-        g_url = "http://" + options.dest
-
     if (options.dest == None or options.id == None or options.password == None):
         help()
-        return
+        return False
+
+    if (options.dest).find("http://") != 0:
+        url = url + options.dest
 
     auth = requests.auth.HTTPBasicAuth(options.id, options.password)
-    prjlst = get_projects(g_url, auth) 
+    prjlst = get_projects(url, auth) 
+    if prjlst == None:
+        return False
+
     for prjname in prjlst:
         print("[PROJECT_NAME] " + prjname)
-        issues = get_issues(g_url, auth, prjname)
+        issues = get_issues(url, auth, prjname)
         for k, v in issues.items():
             print("  ID: %s / KEY: %s" % (k,v))
             # print("  KEY: %s / SUMMARY: %s" % (k,v))
+
+    return True
 
 if __name__ == '__main__':
     main()

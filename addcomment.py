@@ -9,17 +9,6 @@ import requests
 import os, sys
 import optparse
 
-
-_payload = """
-{
-    "body": "test message",
-    "visibility": {
-        "type": "role",
-        "value": "Administrators"
-    }
-}
-"""
-
 def add_comment(user, passwd, url, issuenum, _data):
     auth = requests.auth.HTTPBasicAuth(user, passwd)
     data = """
@@ -32,16 +21,22 @@ def add_comment(user, passwd, url, issuenum, _data):
     }
     """ % repr(_data)
 
-    print(data)
     header = {"Content-Type":"application/json"}
-    res = requests.post(url + "/rest/api/latest/issue/" + issuenum + "/comment", data=data, auth=auth, headers=header)
-    # try:
-    #     res = requests.post(url + "/rest/api/latest/issue/" + issuenum + "/comment", data=data, auth=auth)
-    # except:
-    #     print("exception")
-    #     return
+    try:
+        res = requests.post(url + "/rest/api/latest/issue/" + issuenum + "/comment", data=data, auth=auth, headers=header)
+    except requests.exceptions.ConnectionError:
+        res.status_code = "Connection refused"
+        print("connection refused")
+        help()
+        sys.exit(0)
+    except requests.URLRequired:
+        print("invalid url...")
+        help()
+        sys.exit(0)
+
     if res.status_code == 200:
         return True
+
     return False
 
 def run_command(user, passwd, url):
@@ -52,7 +47,6 @@ def run_command(user, passwd, url):
 
 def help():
     print ("")
-    print ("")
     print ("  you should run with 4 arguments")
     print ("  1. url with '-d' option")
     print ("  2. userID with '-i' option")
@@ -61,8 +55,7 @@ def help():
     print ("")
 
 def main():
-    g_url = ""
-
+    url = "http://"
     parser = optparse.OptionParser()
     parser.add_option('-i', '--id', action='store', dest='id', help="enter user id")
     parser.add_option('-p', '--password', action='store', dest='password', help="enter password")
@@ -70,17 +63,17 @@ def main():
     parser.add_option('-n', '--num', action='store', dest='num', help="enter issue number")
     (options, args) = parser.parse_args(sys.argv)
 
-    if options.dest != None:
-        # print((options.dest).find('http://'))
-        g_url = "http://" + options.dest
-        # return
-
     if (options.dest == None or options.id == None or options.password == None or options.num == None):
         help()
-        return
+        sys.exit(0)
+
+    if (options.dest).find("http://") != 0:
+        url = url + options.dest
 
     issues = run_command(options.id, options.password, options.dest)
-    add_comment(options.id, options.password, g_url, options.num, issues)
+    add_comment(options.id, options.password, url, options.num, issues)
+
+    return True
 
 if __name__ == '__main__':
     main()
