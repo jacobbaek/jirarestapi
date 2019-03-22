@@ -11,7 +11,7 @@ def help():
     print ("")
     print ("")
     print ("  you should run with 3 arguments")
-    print ("  1. url with '-u' option")
+    print ("  1. url with '-d' option")
     print ("  2. userID with '-i' option")
     print ("  3. password with '-p' option")
     print ("")
@@ -21,11 +21,17 @@ def get_issues(url, auth, projectname):
     idslst = {}
     # return requests.get(URL + "/rest/api/latest/issue/TESTMGMT-1", auth=auth)
     # return requests.get(URL + "/rest/api/latest/project", auth=auth)
-    res = requests.get(url + "/rest/api/2/search?jql=project=" + projectname + "&fields=id,key", auth=auth)
+    try:
+        res = requests.get(url + "/rest/api/2/search?jql=project=" + projectname + "&fields=id,key,summary", auth=auth)
+    except requests.exceptions.ConnectionError:
+        res.status_code = "Connection refused"
+        return
+
     jsondict = json.loads(res.text)
 
     for idnum in jsondict['issues']:
         idslst[idnum['id']] = idnum['key']
+        # idslst[idnum['key']] = idnum['fields']['summary']
     return idslst
 
 def get_projects(url, auth):
@@ -59,7 +65,8 @@ def main():
         print("[PROJECT_NAME] " + prjname)
         issues = get_issues(g_url, auth, prjname)
         for k, v in issues.items():
-            print("  ID %s / KEY %s" % (k,v))
+            print("  ID: %s / KEY: %s" % (k,v))
+            # print("  KEY: %s / SUMMARY: %s" % (k,v))
 
 if __name__ == '__main__':
     main()
