@@ -20,17 +20,7 @@ def get_issues(url, auth, projectname):
     idslst = {}
     # return requests.get(URL + "/rest/api/latest/issue/TESTMGMT-1", auth=auth)
     # return requests.get(URL + "/rest/api/latest/project", auth=auth)
-    try:
-        res = requests.get(url + "/rest/api/2/search?jql=project=" + projectname + "&fields=id,key,summary", auth=auth)
-    except requests.exceptions.ConnectionError:
-        res.status_code = "Connection refused"
-        print("connection refused")
-        help()
-        return False
-    except requests.URLRequired:
-        print("invalid url...")
-        help()
-        return False
+    res = requests.get(url + "/rest/api/2/search?jql=project=" + projectname + "&fields=id,key,summary", auth=auth)
 
     jsondict = json.loads(res.text)
 
@@ -42,7 +32,7 @@ def get_issues(url, auth, projectname):
 def get_projects(url, auth):
     prjlst = []
     try:
-        res = requests.get(url + "/rest/api/2/project", auth=auth)
+        res = requests.get(url + "/rest/api/latest/project", auth=auth)
     except requests.exceptions.ConnectionError:
         print("connection refused")
         help()
@@ -51,6 +41,7 @@ def get_projects(url, auth):
         print("invalid url...")
         help()
         return None
+    print(res.status_code)
 
     jsondict = json.loads(res.text)
 
@@ -72,7 +63,7 @@ def main():
         return False
 
     if (options.dest).find("http://") != 0:
-        url = url + options.dest
+        url = url + options.dest + "/jira"
 
     auth = requests.auth.HTTPBasicAuth(options.id, options.password)
     prjlst = get_projects(url, auth) 

@@ -68,7 +68,7 @@ def main():
         sys.exit(0)
 
     if (options.dest).find("http://") != 0:
-        url = url + options.dest
+        url = url + options.dest + "/jira"
 
     issues = run_command(options.id, options.password, options.dest)
     add_comment(options.id, options.password, url, options.num, issues)
